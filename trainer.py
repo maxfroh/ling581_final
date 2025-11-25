@@ -1,0 +1,85 @@
+import sys
+import argparse
+import torch
+import pandas as pd
+from datasets import Dataset, Features, Value, DatasetDict
+from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer
+
+SEED = 7
+age_ranges = [(13, 17), (23, 27), (33, 42)]
+
+
+def create_tokenizer() -> AutoTokenizer:
+    tokenizer = AutoTokenizer.from_pretrained("FacebookAI/roberta-base")
+    return tokenizer
+
+
+def create_dataset(tokenizer: AutoTokenizer) -> DatasetDict:
+    def preprocess(batch):
+        return tokenizer(batch["text"], truncation=True, padding="max_length")
+
+    desired_features = Features(
+        {"label": Value("int64"), "text": Value("string")})
+    dataset = Dataset.from_csv(
+        "cleaned_data.csv", features=desired_features).train_test_split(test_size=1.5e-5)["test"]
+    dataset = dataset.train_test_split(test_size=0.2, seed=SEED)
+    testing_split = dataset["test"].train_test_split(test_size=0.5, seed=SEED)
+    dataset["val"] = testing_split["train"]
+    dataset["test"] = testing_split["test"]
+
+    dataset = dataset.map(preprocess, batched=True)
+    return dataset
+
+
+def create_model(num_labels: int) -> RobertaForSequenceClassification:
+    model = RobertaForSequenceClassification.from_pretrained(
+        "FacebookAI/roberta-base", num_labels=num_labels, device_map="auto")
+
+
+def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: RobertaForSequenceClassification, args: argparse.Namespace) -> Trainer:
+    training_args = TrainingArguments(
+        output_dir="./results",
+        logging_dir="./logs",
+        learning_rate=args.learning_rate,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
+        num_train_epochs=args.num_epochs,
+        weight_decay=args.weight_decay,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=dataset["train"],
+        eval_dataset=dataset["val"],
+        processing_class=tokenizer,
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="RoBERTa Trainer",
+        description="Builds a dataset and RoBERTa model, then trains it."
+    )
+    parser.add_argument("-lr", "--learning_rate", type=float, default=2e-5)
+    parser.add_argument("-e", "--num_epochs", type=int, default=10)
+    parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
+    parser.add_argument("-b", "--batch_size", type=int, default=16)
+
+    args = parser.parse_args()
+
+    tokenizer = create_tokenizer()
+    dataset = create_dataset(tokenizer)
+    labels = set(dataset["train"]["label"])
+    num_labels = len(labels)
+    model = create_model(num_labels)
+    trainer = create_trainer(tokenizer, dataset, model, args)
+
+    trainer.train()
+
+
+if __name__ == "__main__":
+    main()

@@ -14,7 +14,7 @@
 set -e
 cd $SLURM_SUBMIT_DIR
 
-srun -N1 -n1 --exclusive bash -c "source /scratch/10746/maxfroh/ling581/envs/ling581/bin/activate && python /scratch/10746/maxfroh/ling581/ling581_project/src/main.py --results_dir=/scratch/10746/maxfroh/ling581/results --num_epochs=100 --learning_rate=0.01  --scheduler_step_size=1 --scheduler_gamma=0.1 --kfold=5" &
+srun -N1 -n1 --exclusive bash -c "source /scratch/10746/maxfroh/ling581/envs/ling581/bin/activate && python /scratch/10746/maxfroh/ling581/ling581_project/src/main.py --results_dir=/scratch/10746/maxfroh/ling581/results --num_epochs=2 --learning_rate=0.01 --batch_size=32" &
 
 wait
 
