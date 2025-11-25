@@ -1,3 +1,5 @@
 /.vscode
+/results/*
+/logs/*
 blogtext.csv
 cleaned_data.csv
