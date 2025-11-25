@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=128
 #SBATCH --time=20:00:00
 #SBATCH --mail-type=ALL,TIME_LIMIT_50,TIME_LIMIT_90,TIME_LIMIT
-#SBATCH --mail-user=mbf1102@rit.edu, egd1486@g.rit.edu, av1698@rit.edu
+#SBATCH --mail-user=mbf1102@rit.edu
 
 set -e
 cd $SLURM_SUBMIT_DIR
