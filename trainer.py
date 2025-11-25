@@ -64,7 +64,7 @@ def create_tokenizer() -> AutoTokenizer:
     return tokenizer
 
 
-def create_dataset(tokenizer: AutoTokenizer) -> DatasetDict:
+def create_dataset(tokenizer: AutoTokenizer, args: argparse.Namespace) -> DatasetDict:
     def preprocess(batch):
         return tokenizer(batch["text"], truncation=True, padding="max_length")
 
@@ -75,6 +75,10 @@ def create_dataset(tokenizer: AutoTokenizer) -> DatasetDict:
 
     # shrinking it down to just 10 samples for testing
     # dataset = dataset.train_test_split(test_size=1.5e-5)["test"]
+    
+    if args.shrink:
+        # testing with the dataset being only 5% the original size
+        dataset = dataset.train_test_split(test_size=0.05)["test"]
 
     dataset = dataset.train_test_split(test_size=0.2, seed=SEED)
     testing_split = dataset["test"].train_test_split(test_size=0.5, seed=SEED)
@@ -127,11 +131,13 @@ def main():
     parser.add_argument("-b", "--batch_size", type=int, default=16)
     parser.add_argument("--results_dir", type=str, default="./results")
     parser.add_argument("--logs_dir", type=str, default="./logs")
+    parser.add_argument("--shrink", action="store_true")
 
     args = parser.parse_args()
+    print(args)
 
     tokenizer = create_tokenizer()
-    dataset = create_dataset(tokenizer)
+    dataset = create_dataset(tokenizer, args)
     labels = set(dataset["train"]["label"])
     num_labels = len(labels)
     model = create_model(num_labels)
