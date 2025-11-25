@@ -1,12 +1,62 @@
-import sys
 import argparse
-import torch
+import evaluate
+import numpy as np
 import pandas as pd
 from datasets import Dataset, Features, Value, DatasetDict
-from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer
+from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer, EvalPrediction
+from sklearn.metrics import mean_absolute_error, cohen_kappa_score, confusion_matrix
 
 SEED = 7
 age_ranges = [(13, 17), (23, 27), (33, 42)]
+
+
+accuracy = evaluate.load("accuracy")
+precision = evaluate.load("precision")
+recall = evaluate.load("recall")
+f1 = evaluate.load("f1")
+
+
+def custom_compute_metrics(eval_prediction: EvalPrediction):
+    logits, labels = eval_prediction
+    preds = np.argmax(logits, axis=-1)
+
+    # Basic metrics (macro + weighted)
+    acc = accuracy.compute(predictions=preds, references=labels)["accuracy"]
+    prec_macro = precision.compute(
+        predictions=preds, references=labels, average="macro")["precision"]
+    prec_weighted = precision.compute(
+        predictions=preds, references=labels, average="weighted")["precision"]
+    rec_macro = recall.compute(
+        predictions=preds, references=labels, average="macro")["recall"]
+    rec_weighted = recall.compute(
+        predictions=preds, references=labels, average="weighted")["recall"]
+    f1_macro = f1.compute(
+        predictions=preds, references=labels, average="macro")["f1"]
+    f1_weighted = f1.compute(
+        predictions=preds, references=labels, average="weighted")["f1"]
+
+    # Ordinal metrics
+    mae = mean_absolute_error(labels, preds)
+    qwk = cohen_kappa_score(labels, preds, weights="quadratic")
+
+    # Confusion matrix
+    cm = confusion_matrix(labels, preds)
+
+    # Put confusion matrix as a string (Trainer can't serialize numpy arrays)
+    cm_str = np.array2string(cm)
+
+    return {
+        "accuracy": acc,
+        "precision_macro": prec_macro,
+        "precision_weighted": prec_weighted,
+        "recall_macro": rec_macro,
+        "recall_weighted": rec_weighted,
+        "f1_macro": f1_macro,
+        "f1_weighted": f1_weighted,
+        "mae": mae,
+        "qwk": qwk,
+        "confusion_matrix": cm_str
+    }
 
 
 def create_tokenizer() -> AutoTokenizer:
@@ -21,7 +71,11 @@ def create_dataset(tokenizer: AutoTokenizer) -> DatasetDict:
     desired_features = Features(
         {"label": Value("int64"), "text": Value("string")})
     dataset = Dataset.from_csv(
-        "cleaned_data.csv", features=desired_features).train_test_split(test_size=1.5e-5)["test"]
+        "cleaned_data.csv", features=desired_features)
+
+    # shrinking it down to just 10 samples for testing
+    # dataset = dataset.train_test_split(test_size=1.5e-5)["test"]
+
     dataset = dataset.train_test_split(test_size=0.2, seed=SEED)
     testing_split = dataset["test"].train_test_split(test_size=0.5, seed=SEED)
     dataset["val"] = testing_split["train"]
@@ -57,6 +111,7 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
         processing_class=tokenizer,
+        compute_metrics=custom_compute_metrics
     )
     return trainer
 

@@ -14,6 +14,8 @@
 set -e
 cd $SLURM_SUBMIT_DIR
 
+export TOKENIZERS_PARALLELISM=false
+
 srun -N1 -n1 --exclusive bash -c "source /scratch/10746/maxfroh/ling581/envs/ling581/bin/activate && python /scratch/10746/maxfroh/ling581/ling581_final/trainer.py --num_epochs=10 --learning_rate=0.01 --batch_size=32" &
 
 wait
