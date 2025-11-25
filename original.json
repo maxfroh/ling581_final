@@ -1,0 +1,36 @@
+{
+    "age": {
+        "15": 38,
+        "33": 83,
+        "14": 21,
+        "25": 51,
+        "17": 35,
+        "23": 1,
+        "37": 19,
+        "26": 35,
+        "24": 191,
+        "27": 25
+    },
+    "genders": {
+        "male": 189,
+        "female": 310
+    },
+    "topics": {
+        "Student": 73,
+        "InvestmentBanking": 70,
+        "indUnk": 272,
+        "Non-Profit": 46,
+        "Banking": 13,
+        "Education": 25
+    },
+    "signs": {
+        "Leo": 39,
+        "Aquarius": 162,
+        "Aries": 46,
+        "Capricorn": 2,
+        "Gemini": 10,
+        "Cancer": 46,
+        "Sagittarius": 3,
+        "Scorpio": 191
+    }
+}
