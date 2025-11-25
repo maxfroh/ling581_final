@@ -69,7 +69,7 @@ def main():
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
     parser.add_argument("-b", "--batch_size", type=int, default=16)
     parser.add_argument("--results_dir", type=str, default="./results")
-    parser.add_argument("--logs_dir", type="str", default="./logs")
+    parser.add_argument("--logs_dir", type=str, default="./logs")
 
     args = parser.parse_args()
 
