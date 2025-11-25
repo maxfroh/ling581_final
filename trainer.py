@@ -34,6 +34,7 @@ def create_dataset(tokenizer: AutoTokenizer) -> DatasetDict:
 def create_model(num_labels: int) -> RobertaForSequenceClassification:
     model = RobertaForSequenceClassification.from_pretrained(
         "FacebookAI/roberta-base", num_labels=num_labels, device_map="auto")
+    return model
 
 
 def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: RobertaForSequenceClassification, args: argparse.Namespace) -> Trainer:
@@ -57,6 +58,7 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         eval_dataset=dataset["val"],
         processing_class=tokenizer,
     )
+    return trainer
 
 
 def main():
