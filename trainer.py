@@ -6,7 +6,6 @@ from datasets import Dataset, Features, Value, DatasetDict
 from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer, EvalPrediction
 from sklearn.metrics import mean_absolute_error, cohen_kappa_score, confusion_matrix
 
-SEED = 7
 age_ranges = [(13, 17), (23, 27), (33, 42)]
 
 
@@ -35,10 +34,6 @@ def custom_compute_metrics(eval_prediction: EvalPrediction):
     f1_weighted = f1.compute(
         predictions=preds, references=labels, average="weighted")["f1"]
 
-    # Ordinal metrics
-    mae = mean_absolute_error(labels, preds)
-    qwk = cohen_kappa_score(labels, preds, weights="quadratic")
-
     # Confusion matrix
     cm = confusion_matrix(labels, preds)
 
@@ -53,8 +48,6 @@ def custom_compute_metrics(eval_prediction: EvalPrediction):
         "recall_weighted": rec_weighted,
         "f1_macro": f1_macro,
         "f1_weighted": f1_weighted,
-        "mae": mae,
-        "qwk": qwk,
         "confusion_matrix": cm_str
     }
 
@@ -78,10 +71,10 @@ def create_dataset(tokenizer: AutoTokenizer, args: argparse.Namespace) -> Datase
     
     if args.shrink:
         # testing with the dataset being only 5% the original size
-        dataset = dataset.train_test_split(test_size=0.05)["test"]
+        dataset = dataset.train_test_split(test_size=0.05, seed=args.seed)["test"]
 
-    dataset = dataset.train_test_split(test_size=0.2, seed=SEED)
-    testing_split = dataset["test"].train_test_split(test_size=0.5, seed=SEED)
+    dataset = dataset.train_test_split(test_size=0.2, seed=args.seed)
+    testing_split = dataset["test"].train_test_split(test_size=0.5, seed=args.seed)
     dataset["val"] = testing_split["train"]
     dataset["test"] = testing_split["test"]
 
@@ -132,6 +125,7 @@ def main():
     parser.add_argument("--results_dir", type=str, default="./results")
     parser.add_argument("--logs_dir", type=str, default="./logs")
     parser.add_argument("--shrink", action="store_true")
+    parser.add_argument("--seed", type=int, default=7)
 
     args = parser.parse_args()
     print(args)
@@ -142,8 +136,12 @@ def main():
     num_labels = len(labels)
     model = create_model(num_labels)
     trainer = create_trainer(tokenizer, dataset, model, args)
+    
+    print(dict(pd.Series(dataset["train"]["label"]).value_counts()))
 
     trainer.train()
+    trainer.save_model("./saved_model")
+    trainer.evaluate(dataset["test"])
 
 
 if __name__ == "__main__":
