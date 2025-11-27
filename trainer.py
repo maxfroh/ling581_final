@@ -141,7 +141,7 @@ def main():
     print(dict(pd.Series(dataset["train"]["label"]).value_counts()))
 
     trainer.train()
-    trainer.save_model("./saved_model")
+    trainer.save_model(f"./saved_model_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}")
     trainer.evaluate(dataset["test"])
 
 
