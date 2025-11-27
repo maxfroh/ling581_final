@@ -3,7 +3,7 @@ import evaluate
 import numpy as np
 import pandas as pd
 from datasets import Dataset, Features, Value, DatasetDict
-from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer, EvalPrediction
+from transformers import AutoTokenizer, RobertaForSequenceClassification, TrainingArguments, Trainer, EvalPrediction, EarlyStoppingCallback
 from sklearn.metrics import mean_absolute_error, cohen_kappa_score, confusion_matrix
 
 age_ranges = [(13, 17), (23, 27), (33, 42)]
@@ -71,7 +71,7 @@ def create_dataset(tokenizer: AutoTokenizer, args: argparse.Namespace) -> Datase
     
     if args.shrink:
         # testing with the dataset being only 5% the original size
-        dataset = dataset.train_test_split(test_size=0.05, seed=args.seed)["test"]
+        dataset = dataset.train_test_split(test_size=0.1, seed=args.seed)["test"]
 
     dataset = dataset.train_test_split(test_size=0.2, seed=args.seed)
     testing_split = dataset["test"].train_test_split(test_size=0.5, seed=args.seed)
@@ -108,7 +108,8 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
         processing_class=tokenizer,
-        compute_metrics=custom_compute_metrics
+        compute_metrics=custom_compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
     )
     return trainer
 
