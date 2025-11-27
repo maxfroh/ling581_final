@@ -90,8 +90,8 @@ def create_model(num_labels: int) -> RobertaForSequenceClassification:
 
 def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: RobertaForSequenceClassification, args: argparse.Namespace) -> Trainer:
     training_args = TrainingArguments(
-        output_dir=f"./results_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}",
-        logging_dir=f"./logs_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}",
+        output_dir=f"./results_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}_{"full" if not args.shrink else "shrink"}",
+        logging_dir=f"./logs_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}_{"full" if not args.shrink else "shrink"}",
         learning_rate=args.learning_rate,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
@@ -141,7 +141,7 @@ def main():
     print(dict(pd.Series(dataset["train"]["label"]).value_counts()))
 
     trainer.train()
-    trainer.save_model(f"./saved_model_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}")
+    trainer.save_model(f"./saved_model_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}_{"full" if not args.shrink else "shrink"}")
     trainer.evaluate(dataset["test"])
 
 
