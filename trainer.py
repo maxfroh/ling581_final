@@ -90,8 +90,8 @@ def create_model(num_labels: int) -> RobertaForSequenceClassification:
 
 def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: RobertaForSequenceClassification, args: argparse.Namespace) -> Trainer:
     training_args = TrainingArguments(
-        output_dir=args.results_dir,
-        logging_dir=args.logs_dir,
+        output_dir=f"./results_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}",
+        logging_dir=f"./logs_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}",
         learning_rate=args.learning_rate,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
@@ -123,8 +123,8 @@ def main():
     parser.add_argument("-e", "--num_epochs", type=int, default=10)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
     parser.add_argument("-b", "--batch_size", type=int, default=16)
-    parser.add_argument("--results_dir", type=str, default="./results")
-    parser.add_argument("--logs_dir", type=str, default="./logs")
+    # parser.add_argument("--results_dir", type=str, default="./results")
+    # parser.add_argument("--logs_dir", type=str, default="./logs")
     parser.add_argument("--shrink", action="store_true")
     parser.add_argument("--seed", type=int, default=7)
 
