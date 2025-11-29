@@ -4,3 +4,4 @@ __pycache__
 /logs/*
 blogtext.csv
 cleaned_data.csv
+/model_figures/*

@@ -100,6 +100,8 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
+        metric_for_best_model="loss",
+        warmup_ratio=args.warmup_ratio,
     )
 
     trainer = Trainer(
@@ -123,6 +125,7 @@ def main():
     parser.add_argument("-e", "--num_epochs", type=int, default=10)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
     parser.add_argument("-b", "--batch_size", type=int, default=16)
+    parser.add_argument("-wr", "--warmup_ratio", type=float, default=0.1)
     # parser.add_argument("--results_dir", type=str, default="./results")
     # parser.add_argument("--logs_dir", type=str, default="./logs")
     parser.add_argument("--shrink", action="store_true")
