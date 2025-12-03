@@ -2,6 +2,8 @@ __pycache__
 /.vscode
 /results/*
 /logs/*
+/models/*
+/model_figures/*
 blogtext.csv
 cleaned_data.csv
-/model_figures/*
+trimmed_data.csv

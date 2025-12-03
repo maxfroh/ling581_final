@@ -3,11 +3,13 @@ import csv
 import json
 import os
 import sys
+import random
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import Counter
 
-import chardet
+
+SEED = 7
 
 
 def snip():
@@ -112,8 +114,53 @@ def clean_data():
                         cleaned_line = ",".join(cleaned_vals) + "\n"
                         fout.write(cleaned_line)
                 line = fin.readline()
+                
+
+def trim_data():
+    df = pd.read_csv("cleaned_data.csv")
+    size = len(df)
+    one_percent = size // 100
+    five_percent = one_percent * 5
+    print(size, one_percent, five_percent, five_percent / size)
+    
+    class_0 = df[df["label"] == 0].sample(n=five_percent, random_state=SEED)
+    class_1 = df[df["label"] == 1].sample(n=five_percent, random_state=SEED)
+    class_2 = df[df["label"] == 2].sample(n=five_percent, random_state=SEED)
+    trimmed = pd.concat([class_0, class_1, class_2])
+    trimmed = trimmed.sample(frac=1, random_state=SEED)
+    trimmed.to_csv("trimmed_data.csv", index=False)
+        
+
+def graph_age_brackets():
+    if not os.path.isdir("graphs"):
+        os.mkdir("graphs")
+
+    colors = ["red", "orange", "gold", "lightyellow", "greenyellow", "limegreen",
+              "mediumspringgreen", "lightskyblue", "royalblue", "mediumpurple", "violet", "pink"]
+
+    # age_ranges = [(13, 17), (23, 27), (33, 42)]
+    age_ranges = {
+        "13-17": 0,
+        "23-27": 0,
+        "33-42": 0
+    }
+    
+    df = pd.read_csv("cleaned_data.csv")
+    age_ranges["13-17"] = (df["label"] == 0).sum()
+    age_ranges["23-27"] = (df["label"] == 1).sum()
+    age_ranges["33-42"] = (df["label"] == 2).sum()
+    print(age_ranges)
+    
+    total = sum(age_ranges.values())
+    autopct = lambda x: f"{int(x / 100 * total)}\n({x:.2f}%)"
+        
+    plt.pie(list(age_ranges.values()), labels=list(age_ranges.keys()), autopct=autopct, startangle=0, colors=["skyblue", "cornflowerblue", "mediumpurple"])
+    plt.title("Age Bracket Distribution in Final Dataset")
+    plt.savefig("graphs/age_brackets.png", bbox_inches="tight", dpi=300)
 
 
 # process_full_data()
 # make_graphs()
-clean_data()
+# graph_age_brackets()
+# clean_data()
+trim_data()

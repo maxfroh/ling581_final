@@ -13,11 +13,6 @@ def process_file(filename: str):
             if "eval_accuracy" in line_dict:
                 epoch = int(line_dict["epoch"])
                 acc = float(line_dict["eval_accuracy"])
-                # if acc > file_dict["best_accuracy"]:
-                #     file_dict["best_accuracy"] = acc
-                #     file_dict["best_epoch"] = epoch
-                #     file_dict["best_loss"] = 0
-                # file_dict["max_epochs"] = epoch
                 file_dict[int(epoch)] = line_dict
         
     return file_dict
@@ -78,5 +73,5 @@ def main(dirname):
     graph(dd)
     
 if __name__ == "__main__":
-    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs')
+    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs/larger_outs')
     
