@@ -64,7 +64,7 @@ def create_dataset(tokenizer: AutoTokenizer, args: argparse.Namespace) -> Datase
     desired_features = Features(
         {"label": Value("int64"), "text": Value("string")})
     dataset = Dataset.from_csv(
-        "cleaned_data.csv", features=desired_features)
+        "trimmed_data.csv", features=desired_features)
 
     # shrinking it down to just 10 samples for testing
     # dataset = dataset.train_test_split(test_size=1.5e-5)["test"]
