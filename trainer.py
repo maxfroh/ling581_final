@@ -101,7 +101,7 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         eval_steps=500,
         save_strategy="steps",
         load_best_model_at_end=True,
-        metric_for_best_model="f1",
+        metric_for_best_model="f1_weighted",
         warmup_ratio=args.warmup_ratio,
         max_grad_norm=1.0,
     )
