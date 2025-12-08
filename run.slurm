@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=shrink_lr1e-5_e20_b8
+#SBATCH --job-name=final_lr1e-5_e20_b8
 #SBATCH --partition=gpu-a100
-#SBATCH --output=lr1e-5_e20_b8.%j.out
-#SBATCH --error=lr1e-5_e20_b8.%j.err
+#SBATCH --output=final_lr1e-5_e20_b8.%j.out
+#SBATCH --error=final_lr1e-5_e20_b8.%j.err
 #SBATCH --account=CCR24017
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

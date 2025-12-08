@@ -99,7 +99,7 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         weight_decay=args.weight_decay,
         eval_strategy="steps",
         eval_steps=500,
-        save_strategy="epoch",
+        save_strategy="steps",
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         warmup_ratio=args.warmup_ratio,
