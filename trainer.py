@@ -97,11 +97,13 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.num_epochs,
         weight_decay=args.weight_decay,
-        eval_strategy="epoch",
+        eval_strategy="steps",
+        eval_steps=500,
         save_strategy="epoch",
         load_best_model_at_end=True,
-        metric_for_best_model="loss",
+        metric_for_best_model="f1",
         warmup_ratio=args.warmup_ratio,
+        max_grad_norm=1.0,
     )
 
     trainer = Trainer(
@@ -111,7 +113,7 @@ def create_trainer(tokenizer: AutoTokenizer, dataset: DatasetDict, model: Robert
         eval_dataset=dataset["val"],
         processing_class=tokenizer,
         compute_metrics=custom_compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
     )
     return trainer
 

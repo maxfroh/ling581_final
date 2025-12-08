@@ -22,10 +22,12 @@ def process_all(curr_dir: str):
     data_dict = {}
     
     for dirpath, dirnames, filenames in os.walk(curr_dir):    
-        # print(dirpath, filenames)    
-        for filename in filenames:
-            if ".out" in filename:
-                data_dict[filename.strip(".out")] = process_file(dirpath + "/" + filename)
+        # print(dirpath, filenames)  
+        if dirpath == curr_dir:  
+            for filename in filenames:
+                if ".out" in filename:
+                    print("Processing", filename, "...")
+                    data_dict[filename.strip(".out")] = process_file(dirpath + "/" + filename)
             
     return data_dict
 
@@ -73,5 +75,5 @@ def main(dirname):
     graph(dd)
     
 if __name__ == "__main__":
-    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs/larger_outs')
+    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs')
     
