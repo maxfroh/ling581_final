@@ -7,3 +7,5 @@ __pycache__
 blogtext.csv
 cleaned_data.csv
 trimmed_data.csv
+checkpoint-*/
+ablation study/

@@ -7,6 +7,9 @@ from trainer import *
 import argparse
 import random
 import re
+import sys
+import time
+import os
 
 class_names = ['13-17', '23-27', '33-42']  # age ranges
 model = None
@@ -33,6 +36,10 @@ def explain_indiv(idx, dataset, class_names):
     text = dataset["test"]["text"][idx]
     true_label = dataset["test"]["label"][idx]
 
+    # create output directory
+    output_dir = os.path.join('ablation study', f'idx={idx}')
+    os.makedirs(output_dir, exist_ok=True)
+
     # create a LIME text explainer
     explainer = LimeTextExplainer(class_names=class_names)
     
@@ -53,7 +60,7 @@ def explain_indiv(idx, dataset, class_names):
     print("\nTop features:")
     print(exp.as_list())
 
-    exp.save_to_file(f'lime_explanation_idx={idx}.html')
+    exp.save_to_file(os.path.join(output_dir, f'lime_explanation_idx={idx}.html'))
 
 #explain multiple texts in a specific class
 def explain_set(idx_lst, dataset, class_names):
@@ -65,32 +72,52 @@ def ablation_study(idx, dataset, class_names, ablation_type):
     text = dataset["test"]["text"][idx]
     true_label = dataset["test"]["label"][idx]
     
+     # create output directory
+    output_dir = os.path.join('ablation study', f'idx={idx}')
+    os.makedirs(output_dir, exist_ok=True)
+
+    
     # create and get LIME explanation
     explainer = LimeTextExplainer(class_names=class_names)
-    exp = explainer.explain_instance(text, predict_proba, num_features=10) #top 10 features
+    # added num_samples to make it run faster / not crash my computer
+    exp = explainer.explain_instance(text, predict_proba, num_features=10, num_samples=500) #top 10 features
     
     original_probs = predict_proba([text])[0]
     predicted_class = original_probs.argmax()
-    
-    print(f"Text: {text}...")
-    print(f"\nOriginal Probabilities: {original_probs}")
-    print(f"True label: {class_names[true_label]}")
-    print(f"Predicted: {class_names[original_probs.argmax()]}")
      
-    #get LIME features
-    lime_features = exp.as_list() #[(word, importance), ...]
-
-    if ablation_type == 'top_n':
-        #remove top N features identified by LIME
-        ablation_lime_top_n(text, lime_features, original_probs, predicted_class)
-    elif ablation_type == 'progressive':
-        #progressively remove features one by one
-        ablation_progressive(text, lime_features, original_probs, predicted_class)
-    elif ablation_type == 'random':
-        #remove random words for comparison
-        ablation_random_baseline(text, lime_features, original_probs, predicted_class)
+    # save results in file inside the output directory
+    output_file = os.path.join(output_dir, f'ablation_results_idx={idx}_{ablation_type}.txt')
+    with open(output_file, 'w', encoding='utf-8') as f:
+        # Redirect print statements to file
+        original_stdout = sys.stdout
+        sys.stdout = f
     
-    exp.save_to_file(f'lime_explanation_idx={idx}.html')
+        print(f"Text: {text}...")
+        print(f"\nOriginal Probabilities: {original_probs}")
+        print(f"True label: {class_names[true_label]}")
+        print(f"Predicted: {class_names[original_probs.argmax()]}")
+        
+        #get LIME features
+        lime_features = exp.as_list() #[(word, importance), ...]
+
+        if ablation_type == 'top_n':
+            #remove top N features identified by LIME
+            ablation_lime_top_n(text, lime_features, original_probs, predicted_class)
+        elif ablation_type == 'progressive':
+            #progressively remove features one by one
+            ablation_progressive(text, lime_features, original_probs, predicted_class)
+        elif ablation_type == 'random':
+            #remove random words for comparison
+            ablation_random_baseline(text, lime_features, original_probs, predicted_class)
+        
+        # restore stdout - print goes to console 
+        sys.stdout = original_stdout
+    
+    print(f"Results saved to ablation_results_idx={idx}_{ablation_type}.txt")
+    
+    # Save LIME visualization once inside the output directory
+    lime_file = os.path.join(output_dir, f'lime_explanation_idx={idx}.html')
+    exp.save_to_file(lime_file)
     
 def ablation_lime_top_n(text, lime_features, original_probs, predicted_class):
     print("\nREMOVING TOP-N LIME FEATURES")
@@ -164,6 +191,7 @@ def remove_words(text, words_to_remove):
 
 
 def main():
+    start_time = time.time()  # Start timer
     global model, tokenizer
     
     #from trainer
@@ -171,14 +199,19 @@ def main():
         prog="RoBERTa Trainer",
         description="Builds a dataset and RoBERTa model, then trains it."
     )
-    parser.add_argument("-lr", "--learning_rate", type=float, default=2e-5)
-    parser.add_argument("-e", "--num_epochs", type=int, default=10)
+    # changed defaults to training model params (trainer_state)
+    parser.add_argument("-lr", "--learning_rate", type=float, default=5e-06)
+    parser.add_argument("-e", "--num_epochs", type=int, default=20)
     parser.add_argument("-wd", "--weight_decay", type=float, default=0.01)
-    parser.add_argument("-b", "--batch_size", type=int, default=16)
+    parser.add_argument("-b", "--batch_size", type=int, default=8)
     # parser.add_argument("--results_dir", type=str, default="./results")
     # parser.add_argument("--logs_dir", type=str, default="./logs")
     parser.add_argument("--shrink", action="store_true")
     parser.add_argument("--seed", type=int, default=7)
+    # for testing 
+    parser.add_argument("--ablation_type", type=str, default="all", 
+                   choices=['top_n', 'progressive', 'random', 'all'])
+    parser.add_argument("--idx", type=int, default=0)
 
     args = parser.parse_args()
     print(args)
@@ -187,13 +220,13 @@ def main():
     dataset = create_dataset(tokenizer, args)
     #
     
-    
-    model_path = f"./saved_model_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}_{'full' if not args.shrink else 'shrink'}"
+    model_path = "./checkpoint-65897"
+    # model_path = f"./saved_model_lr{args.learning_rate}_e{args.num_epochs}_b{args.batch_size}_{'full' if not args.shrink else 'shrink'}"
     #load model
     model = RobertaForSequenceClassification.from_pretrained(
         model_path, 
         num_labels=3,
-        device_map="auto"
+        device_map="cpu"
     )
     #set model to eval
     model.eval()
@@ -202,15 +235,26 @@ def main():
     # explain_indiv(idx=0, dataset=dataset, class_names=class_names)
     # explain_set([1, 4, 10], dataset, class_names)
 
-    #ablation study
-    if args.ablation_type == 'all':
-        for ablation_type in ['lime_top', 'lime_progressive', 'random']:
-            ablation_study(args.idx, dataset, class_names, ablation_type)
-    else:
-        ablation_study(args.idx, dataset, class_names, args.ablation_type)
+      #ablation study - run for indexes _ to _
+    for idx in range(101, 121): 
+        print(f"Processing index {idx}")
+        
+        #ablation study
+        if args.ablation_type == 'all':
+            for ablation_type in ['top_n', 'progressive', 'random']:
+                ablation_study(idx, dataset, class_names, ablation_type) #originally args.idx
+        else:
+            ablation_study(idx, dataset, class_names, args.ablation_type) 
     
+    # Calculate elapsed time
+    elapsed_time = time.time() - start_time
+    hours = int(elapsed_time // 3600)
+    minutes = int((elapsed_time % 3600) // 60)
+    seconds = int(elapsed_time % 60)
+    print(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
     
 if __name__ == "__main__":
     main()
     
 # python lime_explainer.py [args from training]
+#  python3 lime_tester.py --idx 1
