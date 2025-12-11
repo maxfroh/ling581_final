@@ -3,7 +3,7 @@ __pycache__
 /results/*
 /logs/*
 /models/*
-/model_figures/*
+/model_figures*/*
 blogtext.csv
 cleaned_data.csv
 trimmed_data.csv
