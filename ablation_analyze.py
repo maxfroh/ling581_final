@@ -17,12 +17,12 @@ class AblationAnalyzer:
         
         data = {}
         
-        # Extract original probabilities
+        #extract original probabilities
         prob_match = re.search(r'Original Probabilities: \[([\d\.\s]+)\]', content)
         if prob_match:
             data['original_probs'] = [float(x) for x in prob_match.group(1).split()]
         
-        # Extract true and predicted labels
+        #extract true and predicted labels
         true_match = re.search(r'True label: ([\w-]+)', content)
         pred_match = re.search(r'Predicted: ([\w-]+)', content)
         if true_match:
@@ -30,7 +30,7 @@ class AblationAnalyzer:
         if pred_match:
             data['predicted_label'] = pred_match.group(1)
         
-        # Extract text snippet
+        #extract text snippet
         text_match = re.search(r'Text: (.+?)\.\.\.', content, re.DOTALL)
         if text_match:
             data['text_snippet'] = text_match.group(1)[:200] + '...'
@@ -93,12 +93,12 @@ class AblationAnalyzer:
         
         data = {}
         
-        # Extract text (everything before "Probability")
+        # etract text (everything before "Probability")
         text_match = re.search(r'^(.+?)(?=Probability)', content, re.DOTALL)
         if text_match:
             data['text'] = text_match.group(1).strip()
         
-        # Extract probabilities
+        #extract probabilities
         prob_13_17 = re.search(r'Probability \(13-17\) = ([\d\.]+)', content)
         prob_23_27 = re.search(r'Probability \(23-27\) = ([\d\.]+)', content)
         prob_33_42 = re.search(r'Probability \(33-42\) = ([\d\.]+)', content)
@@ -110,7 +110,7 @@ class AblationAnalyzer:
                 '33-42': float(prob_33_42.group(1))
             }
         
-        # Extract true and predicted labels
+        #extract true and predicted labels
         true_match = re.search(r'True label: ([\w-]+)', content)
         pred_match = re.search(r'Predicted: ([\w-]+)', content)
         if true_match:
@@ -118,7 +118,7 @@ class AblationAnalyzer:
         if pred_match:
             data['predicted_label'] = pred_match.group(1)
         
-        # Extract top features
+        #extract top features
         features_match = re.search(r'Top features:\s*\[(.*?)\]', content, re.DOTALL)
         if features_match:
             features_str = features_match.group(1)
@@ -149,7 +149,7 @@ class AblationAnalyzer:
             
             self.results[idx] = {'metadata': {}}
             
-            # Load each ablation type
+            #load each ablation type
             for filename in os.listdir(idx_path):
                 if filename.startswith('ablation_results'):
                     filepath = os.path.join(idx_path, filename)
@@ -188,13 +188,13 @@ class AblationAnalyzer:
         for idx, data in self.results.items():
             metadata = data.get('metadata', {})
             
-            # Count predictions
+            # cunt predictions
             if metadata.get('true_label') == metadata.get('predicted_label'):
                 stats['correct_predictions'] += 1
             else:
                 stats['incorrect_predictions'] += 1
             
-            # Label distributions
+            #label distributions
             if 'true_label' in metadata:
                 stats['label_distribution'][metadata['true_label']] += 1
             if 'predicted_label' in metadata:
@@ -233,7 +233,7 @@ class AblationAnalyzer:
             f.write("COMPREHENSIVE ABLATION STUDY ANALYSIS\n")
             f.write("="*80 + "\n\n")
             
-            # Overall Statistics
+            #overall statistics
             f.write("OVERALL STATISTICS\n")
             f.write("-"*80 + "\n")
             f.write(f"Total Samples Analyzed: {stats['total_samples']}\n")
@@ -251,7 +251,7 @@ class AblationAnalyzer:
             f.write(f"\nAverage Impact of Removing Top-10 LIME Features: {stats['avg_top10_impact']:.4f}\n")
             f.write(f"Average LIME vs Random Impact Ratio: {stats['avg_lime_vs_random']:.2f}x\n\n")
             
-            # Individual Sample Analysis
+            #individual sample analysis
             f.write("\n" + "="*80 + "\n")
             f.write("INDIVIDUAL SAMPLE ANALYSIS\n")
             f.write("="*80 + "\n\n")
@@ -295,13 +295,13 @@ class AblationAnalyzer:
                     for result in data['top_n']:
                         f.write(f"  Top-{result['n']}: {result['prob_before']:.4f} → {result['prob_after']:.4f} (Δ={result['diff']:+.4f})\n")
                 
-                # Progressive Results
+                #progressive results
                 if 'progressive' in data:
                     f.write("\nPROGRESSIVE FEATURE REMOVAL:\n")
                     for result in data['progressive']:
                         f.write(f"  Step {result['step']}: Removed '{result['word']}' (imp={result['importance']:+.4f}) → Δ={result['diff']:+.4f}\n")
                 
-                # Random Baseline
+                #random baseline
                 if 'random' in data:
                     f.write("\nLIME VS RANDOM BASELINE:\n")
                     rand = data['random']
@@ -316,7 +316,7 @@ class AblationAnalyzer:
     
     def generate_json_export(self, output_file='compiled_ablation_data.json'):
         """Export all data as JSON for further analysis"""
-        # Convert numpy types to native Python types for JSON serialization
+        #convert numpy types to Python types for JSON serialization
         def convert_types(obj):
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
@@ -343,14 +343,14 @@ class AblationAnalyzer:
     
     def generate_top_features_list(self, output_file='top_feature_list.txt'):
         """Gather all top features from correct predictions, grouped by age group"""
-        # Organize features by age group for correct predictions only
+        #organize features by age group for correct predictions only
         features_by_age = {
             '13-17': [],
             '23-27': [],
             '33-42': []
         }
         
-        # Collect features from correct predictions only
+        #collect features from correct predictions only
         for idx, data in self.results.items():
             if 'lime_text' in data and 'top_features' in data['lime_text']:
                 lime_data = data['lime_text']
@@ -367,7 +367,6 @@ class AblationAnalyzer:
                             'importance': feat['importance']
                         })
         
-        # Write to file
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
             f.write("TOP FEATURES FOR CORRECT PREDICTIONS BY AGE GROUP\n")
@@ -376,7 +375,7 @@ class AblationAnalyzer:
             for age_group in ['13-17', '23-27', '33-42']:
                 features = features_by_age[age_group]
                 
-                # Sort by importance (highest to lowest)
+                #sort by importance (highest to lowest)
                 features.sort(key=lambda x: x['importance'], reverse=True)
                 
                 f.write(f"\n{'='*80}\n")
@@ -427,13 +426,13 @@ class AblationAnalyzer:
 def main():
     analyzer = AblationAnalyzer(base_dir='ablation study')
     
-    # Generate text report
+    #generate text report
     analyzer.generate_report('compiled_ablation_analysis.txt')
     
-    # Generate JSON export
+    #generate JSON export
     analyzer.generate_json_export('compiled_ablation_data.json')
     
-    # Generate top features list
+    #generate top features list
     analyzer.generate_top_features_list('top_feature_list.txt')
     
     print("\nAnalysis complete! Generated files:")
