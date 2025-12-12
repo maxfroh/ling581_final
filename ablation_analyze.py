@@ -342,37 +342,58 @@ class AblationAnalyzer:
         return output_file
     
     def generate_top_features_list(self, output_file='top_feature_list.txt'):
-        """Gather all top features from all files and sort by weight"""
-        all_features = []
+        """Gather all top features from correct predictions, grouped by age group"""
+        # Organize features by age group for correct predictions only
+        features_by_age = {
+            '13-17': [],
+            '23-27': [],
+            '33-42': []
+        }
         
-        # Collect all features from all samples
+        # Collect features from correct predictions only
         for idx, data in self.results.items():
             if 'lime_text' in data and 'top_features' in data['lime_text']:
-                for feat in data['lime_text']['top_features']:
-                    all_features.append({
-                        'idx': idx,
-                        'word': feat['word'],
-                        'importance': feat['importance']
-                    })
-        
-        # Sort by importance (highest to lowest)
-        all_features.sort(key=lambda x: x['importance'], reverse=True)
+                lime_data = data['lime_text']
+                
+                # Check if prediction is correct
+                if lime_data.get('true_label') == lime_data.get('predicted_label'):
+                    age_group = lime_data['true_label']
+                    
+                    # Add features to the corresponding age group
+                    for feat in lime_data['top_features']:
+                        features_by_age[age_group].append({
+                            'idx': idx,
+                            'word': feat['word'],
+                            'importance': feat['importance']
+                        })
         
         # Write to file
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("ALL TOP FEATURES SORTED BY IMPORTANCE (HIGHEST TO LOWEST)\n")
+            f.write("TOP FEATURES FOR CORRECT PREDICTIONS BY AGE GROUP\n")
             f.write("="*80 + "\n\n")
-            f.write(f"Total features collected: {len(all_features)}\n")
-            f.write(f"From {len(self.results)} samples\n\n")
             
-            f.write(f"{'Rank':<8} {'Word':<30} {'Importance':<15} {'Index':<10}\n")
-            f.write("-"*80 + "\n")
-            
-            for rank, feat in enumerate(all_features, 1):
-                f.write(f"{rank:<8} {feat['word']:<30} {feat['importance']:+.6f}      idx={feat['idx']}\n")
+            for age_group in ['13-17', '23-27', '33-42']:
+                features = features_by_age[age_group]
+                
+                # Sort by importance (highest to lowest)
+                features.sort(key=lambda x: x['importance'], reverse=True)
+                
+                f.write(f"\n{'='*80}\n")
+                f.write(f"AGE GROUP: {age_group}\n")
+                f.write(f"{'='*80}\n")
+                f.write(f"Total features: {len(features)}\n")
+                f.write(f"From {len(set(feat['idx'] for feat in features))} correctly predicted samples\n\n")
+                
+                f.write(f"{'Rank':<8} {'Word':<30} {'Importance':<15} {'Index':<10}\n")
+                f.write("-"*80 + "\n")
+                
+                for rank, feat in enumerate(features, 1):
+                    f.write(f"{rank:<8} {feat['word']:<30} {feat['importance']:+.6f}      idx={feat['idx']}\n")
+                
+                f.write("\n")
         
-        print(f"Top features list saved to: {output_file}")
+        print(f"Top features list (by age group) saved to: {output_file}")
         return output_file
     
     def export_lime_words_and_weights(self, output_file='lime_words_weights.txt'):
