@@ -75,5 +75,5 @@ def main(dirname):
     graph(dd)
     
 if __name__ == "__main__":
-    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs')
+    main('C:/Users/maxos/OneDrive - rit.edu/2251/LING-581/outs/final_out')
     
