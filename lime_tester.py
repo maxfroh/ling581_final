@@ -31,36 +31,56 @@ def predict_proba(texts):
 
 #explain individual text
 #idx: chosen text index in the validation set
-def explain_indiv(idx, dataset, class_names):
+def explain_indiv(idx, dataset, class_names, save_to_file=False, output_dir=None):
     #select a specific instance from the validation set for explanation
     text = dataset["test"]["text"][idx]
     true_label = dataset["test"]["label"][idx]
 
-    # create output directory
-    output_dir = os.path.join('ablation study', f'idx={idx}')
+    # create output directory inside ablation study folder if not provided
+    if output_dir is None:
+        output_dir = os.path.join('ablation study', f'idx={idx}')
     os.makedirs(output_dir, exist_ok=True)
 
     # create a LIME text explainer
     explainer = LimeTextExplainer(class_names=class_names)
     
     # explain the prediction for the specific instance
-    exp = explainer.explain_instance(text, predict_proba, num_features=10) #top 10 features
+    exp = explainer.explain_instance(text, predict_proba, num_features=10, num_samples=500) #top 10 features
     
     #get probabilities
     probs = predict_proba([text])[0]
     
-    # Print the selected text and its prediction probabilities
-    print(text)
-    print(f"Probability (13-17) = {probs[0]:.4f}")
-    print(f"Probability (23-27) = {probs[1]:.4f}")
-    print(f"Probability (33-42) = {probs[2]:.4f}")
-    print(f"True label: {class_names[true_label]}")
-    print(f"Predicted: {class_names[probs.argmax()]}")
-    #print explanation weights
-    print("\nTop features:")
-    print(exp.as_list())
+    if save_to_file:
+        #save text output to file
+        text_output_file = os.path.join(output_dir, f'lime_text_idx={idx}.txt')
+        with open(text_output_file, 'w', encoding='utf-8') as f:
+            original_stdout = sys.stdout
+            sys.stdout = f
+            
+            print(f"Text: {text}")
+            print(f"Probability (13-17) = {probs[0]:.4f}")
+            print(f"Probability (23-27) = {probs[1]:.4f}")
+            print(f"Probability (33-42) = {probs[2]:.4f}")
+            print(f"True label: {class_names[true_label]}")
+            print(f"Predicted: {class_names[probs.argmax()]}")
+            print("\nTop features:")
+            print(exp.as_list())
+            
+            sys.stdout = original_stdout
+    else:
+        #print the selected text and its prediction probabilities
+        print(text)
+        print(f"Probability (13-17) = {probs[0]:.4f}")
+        print(f"Probability (23-27) = {probs[1]:.4f}")
+        print(f"Probability (33-42) = {probs[2]:.4f}")
+        print(f"True label: {class_names[true_label]}")
+        print(f"Predicted: {class_names[probs.argmax()]}")
+        #print explanation weights
+        print("\nTop features:")
+        print(exp.as_list())
 
-    exp.save_to_file(os.path.join(output_dir, f'lime_explanation_idx={idx}.html'))
+    # comment this out if you've already ran the ablation study 
+    # exp.save_to_file(os.path.join(output_dir, f'lime_explanation_idx={idx}.html'))
 
 #explain multiple texts in a specific class
 def explain_set(idx_lst, dataset, class_names):
@@ -190,6 +210,19 @@ def remove_words(text, words_to_remove):
     return ' '.join(modified_text.split())
 
 
+def explain_all_samples(dataset, class_names, start_idx, end_idx):
+    # looping through indexes and call explain_indiv for each, saving results to files
+    for idx in range(start_idx, end_idx + 1):
+        print(f"Processing LIME explanation for index {idx}")
+        
+        try:
+            explain_indiv(idx, dataset, class_names, save_to_file=True)
+            print(f"Successfully saved LIME explanation for index {idx}")
+        except Exception as e:
+            print(f"Error processing index {idx}: {e}")
+            continue
+   
+
 def main():
     start_time = time.time()  # Start timer
     global model, tokenizer
@@ -235,8 +268,8 @@ def main():
     # explain_indiv(idx=0, dataset=dataset, class_names=class_names)
     # explain_set([1, 4, 10], dataset, class_names)
 
-      #ablation study - run for indexes _ to _
-    for idx in range(101, 121): 
+    #ablation study - run for indexes _ to _
+    for idx in range(121, 122): 
         print(f"Processing index {idx}")
         
         #ablation study
@@ -245,6 +278,9 @@ def main():
                 ablation_study(idx, dataset, class_names, ablation_type) #originally args.idx
         else:
             ablation_study(idx, dataset, class_names, args.ablation_type) 
+    
+    # # Generate LIME explanations for all samples 0-120
+    explain_all_samples(dataset, class_names, start_idx=150, end_idx=200)
     
     # Calculate elapsed time
     elapsed_time = time.time() - start_time

@@ -9,3 +9,5 @@ cleaned_data.csv
 trimmed_data.csv
 checkpoint-*/
 ablation study/
+analysis/
+*.zip
